@@ -52,6 +52,10 @@ public class BudgetService {
         return budgetRepository.findActiveByCategoryAndDate(user, category, date);
     }
     
+    public List<Budget> findByUserAndCategory(User user, Category category) {
+        return budgetRepository.findByUserAndCategory(user, category);
+    }
+    
     public List<Budget> findExpiredBudgets(User user) {
         return budgetRepository.findExpiredBudgets(user, LocalDate.now());
     }

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'Budget: ' + ${budget.name} + ' - Personal Finance Manager'">Budget Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .budget-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .progress-custom {
+            height: 15px;
+            border-radius: 10px;
+        }
+        
+        .stat-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .budget-status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .period-badge {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-weight: 500;
+        }
+        
+        .transaction-item {
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+            border-radius: 0 10px 10px 0;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .transaction-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Personal Finance Manager</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/transactions">Transactions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/budgets">Budgets</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/categories">Categories</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <form th:action="@{/logout}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Budget Header -->
+        <div class="budget-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="bi bi-piggy-bank me-2"></i>
+                        <span th:text="${budget.name}">Budget Name</span>
+                    </h1>
+                    <p class="mb-3" th:text="${budget.description}" th:if="${budget.description}">Budget description goes here</p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <span class="period-badge">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            <span th:text="${budget.period}">Monthly</span>
+                        </span>
+                        <span class="period-badge">
+                            <i class="bi bi-calendar-range me-1"></i>
+                            <span th:text="${#temporals.format(budget.startDate, 'MMM dd, yyyy')} + ' - ' + ${#temporals.format(budget.endDate, 'MMM dd, yyyy')}">Jan 01 - Dec 31, 2025</span>
+                        </span>
+                        <span th:class="${budget.active} ? 'budget-status status-active' : 'budget-status status-inactive'">
+                            <i th:class="${budget.active} ? 'bi bi-check-circle me-1' : 'bi bi-x-circle me-1'"></i>
+                            <span th:text="${budget.active} ? 'Active' : 'Inactive'">Active</span>
+                        </span>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group" role="group">
+                        <a th:href="@{/budgets/{id}/edit(id=${budget.id})}" class="btn btn-outline-light">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <a href="/budgets" class="btn btn-light">
+                            <i class="bi bi-arrow-left"></i> Back to Budgets
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-currency-dollar text-primary" style="font-size: 2rem;"></i>
+                        <h5 class="card-title mt-2">Budget Amount</h5>
+                        <h3 class="text-primary" th:text="'$' + ${#numbers.formatDecimal(budget.amount, 1, 2)}">$0.00</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-arrow-up-circle text-danger" style="font-size: 2rem;"></i>
+                        <h5 class="card-title mt-2">Spent Amount</h5>
+                        <h3 class="text-danger" th:text="'$' + ${#numbers.formatDecimal(budget.spentAmount != null ? budget.spentAmount : 0, 1, 2)}">$0.00</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-arrow-down-circle text-success" style="font-size: 2rem;"></i>
+                        <h5 class="card-title mt-2">Remaining</h5>
+                        <h3 class="text-success" th:text="'$' + ${#numbers.formatDecimal(budget.amount - (budget.spentAmount != null ? budget.spentAmount : 0), 1, 2)}">$0.00</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-percent text-info" style="font-size: 2rem;"></i>
+                        <h5 class="card-title mt-2">Progress</h5>
+                        <h3 class="text-info" th:text="${#numbers.formatDecimal((budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100, 1, 1)} + '%'">0.0%</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Budget Progress</h5>
+                <div class="progress progress-custom mb-2">
+                    <div class="progress-bar" 
+                         role="progressbar" 
+                         th:style="'width: ' + ${(budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100} + '%'" 
+                         th:class="${(budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100 > 90} ? 'bg-danger' : 
+                                   (${(budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100 > 75} ? 'bg-warning' : 'bg-success')"
+                         th:attr="aria-valuenow=${(budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100}"
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <small class="text-muted">$0</small>
+                    <small class="text-muted" th:text="'$' + ${#numbers.formatDecimal(budget.amount, 1, 2)}">Budget Amount</small>
+                </div>
+                <div class="mt-2">
+                    <small th:if="${(budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100 < 50}" 
+                           class="text-success">
+                        <i class="bi bi-check-circle me-1"></i>
+                        You're doing great! Keep it up.
+                    </small>
+                    <small th:if="${(budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100 >= 50 and (budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100 < 75}" 
+                           class="text-warning">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        You're halfway through your budget. Monitor your spending.
+                    </small>
+                    <small th:if="${(budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100 >= 75 and (budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100 < 90}" 
+                           class="text-warning">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        You've used 75% of your budget. Be careful with remaining expenses.
+                    </small>
+                    <small th:if="${(budget.spentAmount != null ? budget.spentAmount : 0) / budget.amount * 100 >= 90}" 
+                           class="text-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                        Warning! You've used 90% or more of your budget.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Information -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-tag me-2"></i>Category Information
+                        </h5>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Category:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="badge" 
+                                      th:class="${budget.category.type.name() == 'INCOME'} ? 'bg-success' : 'bg-danger'"
+                                      th:text="${budget.category.name}">
+                                    Category Name
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-4"><strong>Type:</strong></div>
+                            <div class="col-sm-8" th:text="${budget.category.type}">Type</div>
+                        </div>
+                        <div class="row mt-2" th:if="${budget.category.description}">
+                            <div class="col-sm-4"><strong>Description:</strong></div>
+                            <div class="col-sm-8" th:text="${budget.category.description}">Description</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-info-circle me-2"></i>Budget Details
+                        </h5>
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Created:</strong></div>
+                            <div class="col-sm-8" th:text="${#temporals.format(budget.createdAt, 'MMM dd, yyyy HH:mm')}">Created Date</div>
+                        </div>
+                        <div class="row mt-2" th:if="${budget.updatedAt != budget.createdAt}">
+                            <div class="col-sm-4"><strong>Last Updated:</strong></div>
+                            <div class="col-sm-8" th:text="${#temporals.format(budget.updatedAt, 'MMM dd, yyyy HH:mm')}">Updated Date</div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-4"><strong>Days Remaining:</strong></div>
+                            <div class="col-sm-8">
+                                <span th:if="${T(java.time.LocalDate).now().isBefore(budget.endDate)}"
+                                      th:text="${T(java.time.temporal.ChronoUnit).DAYS.between(T(java.time.LocalDate).now(), budget.endDate)} + ' days'">
+                                    X days
+                                </span>
+                                <span th:if="${T(java.time.LocalDate).now().isAfter(budget.endDate)}" class="text-danger">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Expired
+                                </span>
+                                <span th:if="${T(java.time.LocalDate).now().isEqual(budget.endDate)}" class="text-warning">
+                                    <i class="bi bi-clock me-1"></i>Ends Today
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card mb-4" th:if="${recentTransactions != null and !recentTransactions.isEmpty()}">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Recent Transactions in This Category
+                    </h5>
+                    <a th:href="@{/transactions(category=${budget.category.id})}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-eye"></i> View All
+                    </a>
+                </div>
+                
+                <div th:if="${recentTransactions.isEmpty()}" class="text-center text-muted py-4">
+                    <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                    <p class="mt-2">No transactions found for this category yet.</p>
+                    <a th:href="@{/transactions/new(category=${budget.category.id})}" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Add First Transaction
+                    </a>
+                </div>
+
+                <div th:if="${!recentTransactions.isEmpty()}">
+                    <div th:each="transaction : ${recentTransactions}" class="transaction-item p-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h6 class="mb-1" th:text="${transaction.description}">Transaction Description</h6>
+                                <small class="text-muted" th:text="${#temporals.format(transaction.date, 'MMM dd, yyyy')}">Date</small>
+                                <div th:if="${transaction.notes}" class="mt-1">
+                                    <small class="text-muted" th:text="${transaction.notes}">Notes</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge" 
+                                      th:class="${transaction.type.name() == 'INCOME'} ? 'bg-success' : 'bg-danger'"
+                                      th:text="${transaction.type}">
+                                    Type
+                                </span>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <strong th:class="${transaction.type.name() == 'INCOME'} ? 'text-success' : 'text-danger'"
+                                        th:text="${transaction.type.name() == 'INCOME' ? '+' : '-'} + '$' + ${#numbers.formatDecimal(transaction.amount, 1, 2)}">
+                                    $0.00
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Actions -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-gear me-2"></i>Budget Actions
+                </h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-grid gap-2">
+                            <a th:href="@{/budgets/{id}/edit(id=${budget.id})}" class="btn btn-outline-primary">
+                                <i class="bi bi-pencil me-2"></i>Edit Budget
+                            </a>
+                            <a th:href="@{/transactions/new(category=${budget.category.id})}" class="btn btn-outline-success">
+                                <i class="bi bi-plus me-2"></i>Add Transaction to Category
+                            </a>
+                            <a th:href="@{/categories/{id}(id=${budget.category.id})}" class="btn btn-outline-info">
+                                <i class="bi bi-tag me-2"></i>View Category Details
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-warning" 
+                                    th:onclick="'toggleBudgetStatus(' + ${budget.id} + ')'"
+                                    th:text="${budget.active} ? 'Deactivate Budget' : 'Activate Budget'">
+                                <i th:class="${budget.active} ? 'bi bi-pause me-2' : 'bi bi-play me-2'"></i>
+                                Toggle Status
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteBudgetModal">
+                                <i class="bi bi-trash me-2"></i>Delete Budget
+                            </button>
+                            <a href="/budgets" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Back to Budgets
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteBudgetModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this budget?</p>
+                    <p><strong th:text="'Budget: ' + ${budget.name}">Budget Name</strong></p>
+                    <p class="text-warning">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        This action cannot be undone.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form th:action="@{/budgets/{id}/delete(id=${budget.id})}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger">Delete Budget</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleBudgetStatus(budgetId) {
+            if (confirm('Are you sure you want to change the budget status?')) {
+                fetch(`/budgets/${budgetId}/toggle-status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Failed to update budget status. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            }
+        }
+
+        // Auto-refresh progress if budget is active
+        document.addEventListener('DOMContentLoaded', function() {
+            const isActive = /*[[${budget.active}]]*/ false;
+            if (isActive) {
+                // Optional: Auto-refresh every 5 minutes to update progress
+                // setInterval(() => location.reload(), 300000);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -2,9 +2,11 @@ package com.finance.manager.controller;
 
 import com.finance.manager.entity.Budget;
 import com.finance.manager.entity.Category;
+import com.finance.manager.entity.Transaction;
 import com.finance.manager.entity.User;
 import com.finance.manager.service.BudgetService;
 import com.finance.manager.service.CategoryService;
+import com.finance.manager.service.TransactionService;
 import com.finance.manager.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -30,6 +32,9 @@ public class BudgetController {
     
     @Autowired
     private CategoryService categoryService;
+    
+    @Autowired
+    private TransactionService transactionService;
     
     @Autowired
     private UserService userService;
@@ -135,7 +140,15 @@ public class BudgetController {
         // Update spent amount to ensure accuracy
         budgetService.updateBudgetSpentAmount(budget.get());
         
+        // Get recent transactions for this category (last 10)
+        List<Transaction> recentTransactions = transactionService.findByUserAndCategory(user, budget.get().getCategory())
+                .stream()
+                .sorted((t1, t2) -> t2.getDate().compareTo(t1.getDate()))
+                .limit(10)
+                .collect(java.util.stream.Collectors.toList());
+        
         model.addAttribute("budget", budget.get());
+        model.addAttribute("recentTransactions", recentTransactions);
         return "budgets/view";
     }
     
