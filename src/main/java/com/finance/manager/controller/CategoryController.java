@@ -2,8 +2,12 @@ package com.finance.manager.controller;
 
 import com.finance.manager.entity.Category;
 import com.finance.manager.entity.User;
+import com.finance.manager.entity.Transaction;
+import com.finance.manager.entity.Budget;
 import com.finance.manager.service.CategoryService;
 import com.finance.manager.service.UserService;
+import com.finance.manager.service.TransactionService;
+import com.finance.manager.service.BudgetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -13,8 +17,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
 
 @Controller
 @RequestMapping("/categories")
@@ -25,6 +31,12 @@ public class CategoryController {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private TransactionService transactionService;
+    
+    @Autowired
+    private BudgetService budgetService;
     
     @GetMapping
     public String listCategories(Authentication authentication, Model model) {
@@ -81,13 +93,49 @@ public class CategoryController {
     @GetMapping("/{id}")
     public String viewCategory(@PathVariable Long id, Model model, Authentication authentication) {
         User user = getCurrentUser(authentication);
-        Optional<Category> category = categoryService.findById(id);
+        Optional<Category> categoryOpt = categoryService.findById(id);
         
-        if (category.isEmpty() || !category.get().getUser().getId().equals(user.getId())) {
+        if (categoryOpt.isEmpty() || !categoryOpt.get().getUser().getId().equals(user.getId())) {
             return "redirect:/categories";
         }
         
-        model.addAttribute("category", category.get());
+        Category category = categoryOpt.get();
+        
+        // Get transactions for this category
+        List<Transaction> allTransactions = transactionService.findByUserAndCategory(user, category);
+        List<Transaction> recentTransactions = allTransactions.stream()
+                .sorted((t1, t2) -> t2.getDate().compareTo(t1.getDate()))
+                .limit(10)
+                .toList();
+        
+        // Calculate statistics
+        long totalTransactions = allTransactions.size();
+        LocalDate thisMonthStart = LocalDate.now().withDayOfMonth(1);
+        long transactionsThisMonth = allTransactions.stream()
+                .filter(t -> !t.getDate().isBefore(thisMonthStart))
+                .count();
+        
+        BigDecimal totalAmount = allTransactions.stream()
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        BigDecimal averageAmount = totalTransactions > 0 ? 
+                totalAmount.divide(BigDecimal.valueOf(totalTransactions), 2, BigDecimal.ROUND_HALF_UP) : 
+                BigDecimal.ZERO;
+        
+        // Get active budgets for this category
+        List<Budget> activeBudgets = budgetService.findByUserAndCategory(user, category).stream()
+                .filter(Budget::isActive)
+                .toList();
+        
+        model.addAttribute("category", category);
+        model.addAttribute("recentTransactions", recentTransactions);
+        model.addAttribute("totalTransactions", totalTransactions);
+        model.addAttribute("transactionsThisMonth", transactionsThisMonth);
+        model.addAttribute("totalAmount", totalAmount);
+        model.addAttribute("averageAmount", averageAmount);
+        model.addAttribute("activeBudgets", activeBudgets);
+        
         return "categories/view";
     }
     
