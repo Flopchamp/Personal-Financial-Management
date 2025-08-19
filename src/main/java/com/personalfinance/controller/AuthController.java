@@ -10,13 +10,16 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import jakarta.validation.Valid;
+import javax.validation.Valid;
 
 @Controller
 public class AuthController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping("/login")
     public String loginPage(@RequestParam(value = "error", required = false) String error,
@@ -68,7 +71,10 @@ public class AuthController {
         }
 
         try {
-            // Save user (password will be encoded in the service)
+            // Encode password
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+            
+            // Save user
             userService.save(user);
             
             redirectAttributes.addFlashAttribute("successMessage", 

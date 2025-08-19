@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${category.id != null ? 'Edit Category' : 'Add Category'} + ' - Personal Finance Manager'">Add Category</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Personal Finance Manager</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/transactions">Transactions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/budgets">Budgets</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/categories">Categories</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <form th:action="@{/logout}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Flash Messages -->
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <span th:text="${errorMessage}">Error message</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="bi bi-plus-circle me-2" th:if="${category.id == null}"></i>
+                <i class="bi bi-pencil me-2" th:if="${category.id != null}"></i>
+                <span th:text="${category.id != null ? 'Edit Category' : 'Add Category'}">Add Category</span>
+            </h1>
+            <a href="/categories" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Categories
+            </a>
+        </div>
+
+        <!-- Category Form -->
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <form th:action="${category.id != null ? '/categories/' + category.id : '/categories'}" 
+                              th:object="${category}" method="post">
+                            
+                            <div class="mb-3">
+                                <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" th:field="*{name}"
+                                       th:class="${#fields.hasErrors('name')} ? 'form-control is-invalid' : 'form-control'"
+                                       placeholder="Enter category name" required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                                    Name error
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
+                                <select class="form-select" id="type" th:field="*{type}"
+                                        th:class="${#fields.hasErrors('type')} ? 'form-select is-invalid' : 'form-select'"
+                                        required>
+                                    <option value="">Select Type</option>
+                                    <option th:each="typeOption : ${categoryTypes}" 
+                                            th:value="${typeOption}" 
+                                            th:text="${typeOption}"
+                                            th:selected="${category.type == typeOption}">
+                                        Type
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('type')}" th:errors="*{type}">
+                                    Type error
+                                </div>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Income:</strong> Money coming in (salary, freelance, etc.)
+                                    <br>
+                                    <strong>Expense:</strong> Money going out (food, rent, etc.)
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Description</label>
+                                <textarea class="form-control" id="description" th:field="*{description}" rows="3"
+                                          placeholder="Optional description for this category"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="color" class="form-label">Color (Optional)</label>
+                                <div class="input-group">
+                                    <input type="color" class="form-control form-control-color" id="color" th:field="*{color}"
+                                           title="Choose a color for this category">
+                                    <input type="text" class="form-control" th:field="*{color}" placeholder="#000000">
+                                </div>
+                                <div class="form-text">
+                                    <i class="bi bi-palette me-1"></i>
+                                    Choose a color to help identify this category in charts and reports.
+                                </div>
+                            </div>
+
+                            <!-- Common Category Suggestions -->
+                            <div class="mb-3" th:if="${category.id == null}">
+                                <label class="form-label">Common Categories</label>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <h6 class="text-success">Income Categories:</h6>
+                                        <div class="d-grid gap-1">
+                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="fillCategory('Salary', 'INCOME', 'Regular salary income')">Salary</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="fillCategory('Freelance', 'INCOME', 'Freelance work income')">Freelance</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="fillCategory('Investment', 'INCOME', 'Investment returns')">Investment</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="fillCategory('Business', 'INCOME', 'Business income')">Business</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <h6 class="text-danger">Expense Categories:</h6>
+                                        <div class="d-grid gap-1">
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="fillCategory('Food & Dining', 'EXPENSE', 'Food and restaurant expenses')">Food & Dining</button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="fillCategory('Transportation', 'EXPENSE', 'Transportation costs')">Transportation</button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="fillCategory('Housing', 'EXPENSE', 'Rent, utilities, and housing costs')">Housing</button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="fillCategory('Entertainment', 'EXPENSE', 'Entertainment and leisure')">Entertainment</button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="fillCategory('Healthcare', 'EXPENSE', 'Medical and healthcare expenses')">Healthcare</button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="fillCategory('Shopping', 'EXPENSE', 'Shopping and personal items')">Shopping</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-text mt-2">
+                                    <i class="bi bi-lightbulb me-1"></i>
+                                    Click on a common category to auto-fill the form, or create your own custom category.
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <a href="/categories" class="btn btn-outline-secondary">Cancel</a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    <span th:text="${category.id != null ? 'Update Category' : 'Add Category'}">Add Category</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function fillCategory(name, type, description) {
+            document.getElementById('name').value = name;
+            document.getElementById('type').value = type;
+            document.getElementById('description').value = description;
+            
+            // Set random color based on type
+            const colors = {
+                'INCOME': ['#28a745', '#20c997', '#17a2b8', '#6f42c1'],
+                'EXPENSE': ['#dc3545', '#fd7e14', '#ffc107', '#e83e8c']
+            };
+            const colorArray = colors[type] || ['#6c757d'];
+            const randomColor = colorArray[Math.floor(Math.random() * colorArray.length)];
+            document.getElementById('color').value = randomColor;
+        }
+
+        // Sync color picker with text input
+        document.getElementById('color').addEventListener('input', function() {
+            const textInputs = document.querySelectorAll('input[type="text"][th\\:field="*{color}"]');
+            textInputs.forEach(input => input.value = this.value);
+        });
+
+        // Set default color if empty
+        document.addEventListener('DOMContentLoaded', function() {
+            const colorInput = document.getElementById('color');
+            if (!colorInput.value) {
+                colorInput.value = '#6c757d';
+            }
+        });
+    </script>
+</body>
+</html>
