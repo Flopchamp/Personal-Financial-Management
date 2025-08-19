@@ -142,8 +142,8 @@
                             <label for="type" class="form-label">Type</label>
                             <select class="form-select" id="type" name="type">
                                 <option value="">All Types</option>
-                                <option value="INCOME" th:selected="${selectedType == T(com.finance.manager.entity.Transaction.TransactionType).INCOME}">Income</option>
-                                <option value="EXPENSE" th:selected="${selectedType == T(com.finance.manager.entity.Transaction.TransactionType).EXPENSE}">Expense</option>
+                                <option value="INCOME" th:selected="${selectedType != null and selectedType.name() == 'INCOME'}">Income</option>
+                                <option value="EXPENSE" th:selected="${selectedType != null and selectedType.name() == 'EXPENSE'}">Expense</option>
                             </select>
                         </div>
                         <div class="col-md-1">
@@ -187,21 +187,21 @@
                                     </td>
                                     <td>
                                         <span class="badge" 
-                                              th:class="${transaction.category.type == T(com.finance.manager.entity.Category.CategoryType).INCOME} ? 'bg-success' : 'bg-danger'"
+                                              th:class="${transaction.category.type.name() == 'INCOME'} ? 'bg-success' : 'bg-danger'"
                                               th:text="${transaction.category.name}">
                                             Category
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge" 
-                                              th:class="${transaction.type == T(com.finance.manager.entity.Transaction.TransactionType).INCOME} ? 'bg-success' : 'bg-danger'"
+                                              th:class="${transaction.type.name() == 'INCOME'} ? 'bg-success' : 'bg-danger'"
                                               th:text="${transaction.type}">
                                             Type
                                         </span>
                                     </td>
                                     <td>
-                                        <strong th:class="${transaction.type == T(com.finance.manager.entity.Transaction.TransactionType).INCOME} ? 'text-success' : 'text-danger'"
-                                                th:text="${transaction.type == T(com.finance.manager.entity.Transaction.TransactionType).INCOME ? '+' : '-'} + '$' + ${#numbers.formatDecimal(transaction.amount, 1, 2)}">
+                                        <strong th:class="${transaction.type.name() == 'INCOME'} ? 'text-success' : 'text-danger'"
+                                                th:text="${transaction.type.name() == 'INCOME' ? '+' : '-'} + '$' + ${#numbers.formatDecimal(transaction.amount, 1, 2)}">
                                             $0.00
                                         </strong>
                                     </td>
