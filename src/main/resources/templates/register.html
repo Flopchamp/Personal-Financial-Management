@@ -107,6 +107,28 @@
                                 </div>
                             </div>
 
+                            <!-- First Name Field -->
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="firstName" th:field="*{firstName}"
+                                       th:class="${#fields.hasErrors('firstName')} ? 'form-control is-invalid' : 'form-control'"
+                                       placeholder="First Name" required>
+                                <label for="firstName"><i class="bi bi-person me-2"></i>First Name</label>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}">
+                                    First name error
+                                </div>
+                            </div>
+
+                            <!-- Last Name Field -->
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="lastName" th:field="*{lastName}"
+                                       th:class="${#fields.hasErrors('lastName')} ? 'form-control is-invalid' : 'form-control'"
+                                       placeholder="Last Name" required>
+                                <label for="lastName"><i class="bi bi-person me-2"></i>Last Name</label>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}">
+                                    Last name error
+                                </div>
+                            </div>
+
                             <!-- Email Field -->
                             <div class="form-floating mb-3">
                                 <input type="email" class="form-control" id="email" th:field="*{email}"
@@ -177,6 +199,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('registrationForm');
             const usernameInput = document.getElementById('username');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             const confirmPasswordInput = document.getElementById('confirmPassword');
@@ -302,6 +326,50 @@
                 validateForm();
             });
 
+            // Validate first name
+            function validateFirstName() {
+                const firstName = firstNameInput.value.trim();
+                
+                if (firstName.length === 0) return false;
+                
+                if (firstName.length >= 2) {
+                    firstNameInput.classList.remove('is-invalid');
+                    firstNameInput.classList.add('is-valid');
+                    return true;
+                } else {
+                    firstNameInput.classList.remove('is-valid');
+                    firstNameInput.classList.add('is-invalid');
+                    return false;
+                }
+            }
+
+            firstNameInput.addEventListener('input', function() {
+                validateFirstName();
+                validateForm();
+            });
+
+            // Validate last name
+            function validateLastName() {
+                const lastName = lastNameInput.value.trim();
+                
+                if (lastName.length === 0) return false;
+                
+                if (lastName.length >= 2) {
+                    lastNameInput.classList.remove('is-invalid');
+                    lastNameInput.classList.add('is-valid');
+                    return true;
+                } else {
+                    lastNameInput.classList.remove('is-valid');
+                    lastNameInput.classList.add('is-invalid');
+                    return false;
+                }
+            }
+
+            lastNameInput.addEventListener('input', function() {
+                validateLastName();
+                validateForm();
+            });
+
             // Validate email
             function validateEmail() {
                 const email = emailInput.value;
@@ -328,13 +396,15 @@
             // Validate form
             function validateForm() {
                 const isUsernameValid = validateUsername();
+                const isFirstNameValid = validateFirstName();
+                const isLastNameValid = validateLastName();
                 const isEmailValid = validateEmail();
                 const passwordResult = checkPasswordStrength(passwordInput.value);
                 const isPasswordValid = passwordResult.strength === 5;
                 const isPasswordMatch = checkPasswordMatch();
                 const isTermsAccepted = termsCheckbox.checked;
 
-                const isFormValid = isUsernameValid && isEmailValid && isPasswordValid && isPasswordMatch && isTermsAccepted;
+                const isFormValid = isUsernameValid && isFirstNameValid && isLastNameValid && isEmailValid && isPasswordValid && isPasswordMatch && isTermsAccepted;
                 
                 submitBtn.disabled = !isFormValid;
                 
