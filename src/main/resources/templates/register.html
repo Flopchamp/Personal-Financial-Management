@@ -93,6 +93,9 @@
                         </div>
 
                         <form th:action="@{/register}" th:object="${user}" method="post" id="registrationForm">
+                            <!-- CSRF Token -->
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                            
                             <!-- Username Field -->
                             <div class="form-floating mb-3">
                                 <input type="text" class="form-control" id="username" th:field="*{username}"
@@ -104,6 +107,28 @@
                                 </div>
                                 <div class="form-text">
                                     <small>Username must be 3-20 characters long and contain only letters, numbers, and underscores.</small>
+                                </div>
+                            </div>
+
+                            <!-- First Name Field -->
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="firstName" th:field="*{firstName}"
+                                       th:class="${#fields.hasErrors('firstName')} ? 'form-control is-invalid' : 'form-control'"
+                                       placeholder="First Name" required>
+                                <label for="firstName"><i class="bi bi-person me-2"></i>First Name</label>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}">
+                                    First name error
+                                </div>
+                            </div>
+
+                            <!-- Last Name Field -->
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control" id="lastName" th:field="*{lastName}"
+                                       th:class="${#fields.hasErrors('lastName')} ? 'form-control is-invalid' : 'form-control'"
+                                       placeholder="Last Name" required>
+                                <label for="lastName"><i class="bi bi-person me-2"></i>Last Name</label>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}">
+                                    Last name error
                                 </div>
                             </div>
 
@@ -147,7 +172,7 @@
 
                             <!-- Terms and Conditions -->
                             <div class="form-check mb-4">
-                                <input class="form-check-input" type="checkbox" id="terms" required>
+                                <input class="form-check-input" type="checkbox" id="terms" name="terms" value="true" required>
                                 <label class="form-check-label" for="terms">
                                     I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and 
                                     <a href="#" class="text-decoration-none">Privacy Policy</a>
@@ -177,6 +202,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('registrationForm');
             const usernameInput = document.getElementById('username');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             const confirmPasswordInput = document.getElementById('confirmPassword');
@@ -302,6 +329,50 @@
                 validateForm();
             });
 
+            // Validate first name
+            function validateFirstName() {
+                const firstName = firstNameInput.value.trim();
+                
+                if (firstName.length === 0) return false;
+                
+                if (firstName.length >= 2) {
+                    firstNameInput.classList.remove('is-invalid');
+                    firstNameInput.classList.add('is-valid');
+                    return true;
+                } else {
+                    firstNameInput.classList.remove('is-valid');
+                    firstNameInput.classList.add('is-invalid');
+                    return false;
+                }
+            }
+
+            firstNameInput.addEventListener('input', function() {
+                validateFirstName();
+                validateForm();
+            });
+
+            // Validate last name
+            function validateLastName() {
+                const lastName = lastNameInput.value.trim();
+                
+                if (lastName.length === 0) return false;
+                
+                if (lastName.length >= 2) {
+                    lastNameInput.classList.remove('is-invalid');
+                    lastNameInput.classList.add('is-valid');
+                    return true;
+                } else {
+                    lastNameInput.classList.remove('is-valid');
+                    lastNameInput.classList.add('is-invalid');
+                    return false;
+                }
+            }
+
+            lastNameInput.addEventListener('input', function() {
+                validateLastName();
+                validateForm();
+            });
+
             // Validate email
             function validateEmail() {
                 const email = emailInput.value;
@@ -328,13 +399,15 @@
             // Validate form
             function validateForm() {
                 const isUsernameValid = validateUsername();
+                const isFirstNameValid = validateFirstName();
+                const isLastNameValid = validateLastName();
                 const isEmailValid = validateEmail();
                 const passwordResult = checkPasswordStrength(passwordInput.value);
                 const isPasswordValid = passwordResult.strength === 5;
                 const isPasswordMatch = checkPasswordMatch();
                 const isTermsAccepted = termsCheckbox.checked;
 
-                const isFormValid = isUsernameValid && isEmailValid && isPasswordValid && isPasswordMatch && isTermsAccepted;
+                const isFormValid = isUsernameValid && isFirstNameValid && isLastNameValid && isEmailValid && isPasswordValid && isPasswordMatch && isTermsAccepted;
                 
                 submitBtn.disabled = !isFormValid;
                 
@@ -351,13 +424,42 @@
 
             // Form submission
             form.addEventListener('submit', function(e) {
-                if (!validateForm()) {
+                console.log('Form submit event triggered');
+                
+                // Validate form one more time
+                const isUsernameValid = validateUsername();
+                const isFirstNameValid = validateFirstName();
+                const isLastNameValid = validateLastName();
+                const isEmailValid = validateEmail();
+                const passwordResult = checkPasswordStrength(passwordInput.value);
+                const isPasswordValid = passwordResult.strength === 5;
+                const isPasswordMatch = checkPasswordMatch();
+                const isTermsAccepted = termsCheckbox.checked;
+
+                console.log('Form validation results:', {
+                    username: isUsernameValid,
+                    firstName: isFirstNameValid,
+                    lastName: isLastNameValid,
+                    email: isEmailValid,
+                    password: isPasswordValid,
+                    passwordMatch: isPasswordMatch,
+                    terms: isTermsAccepted
+                });
+
+                const isFormValid = isUsernameValid && isFirstNameValid && isLastNameValid && isEmailValid && isPasswordValid && isPasswordMatch && isTermsAccepted;
+                
+                if (!isFormValid) {
+                    console.log('Form validation failed, preventing submission');
                     e.preventDefault();
                     return false;
                 }
                 
+                console.log('Form is valid, submitting...');
                 submitBtn.innerHTML = '<i class="spinner-border spinner-border-sm me-2"></i>Creating Account...';
                 submitBtn.disabled = true;
+                
+                // Allow form to submit
+                return true;
             });
         });
     </script>

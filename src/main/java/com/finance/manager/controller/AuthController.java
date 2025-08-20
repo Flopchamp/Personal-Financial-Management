@@ -41,8 +41,15 @@ public class AuthController {
     public String registerUser(@Valid @ModelAttribute User user,
                               BindingResult bindingResult,
                               @RequestParam("confirmPassword") String confirmPassword,
+                              @RequestParam(value = "terms", required = false) String terms,
                               Model model,
                               RedirectAttributes redirectAttributes) {
+        
+        // Check if terms are accepted
+        if (terms == null || !terms.equals("true")) {
+            model.addAttribute("errorMessage", "You must accept the Terms of Service and Privacy Policy.");
+            return "register";
+        }
         
         // Check if passwords match
         if (!user.getPassword().equals(confirmPassword)) {
@@ -64,6 +71,7 @@ public class AuthController {
 
         // Check for validation errors
         if (bindingResult.hasErrors()) {
+            model.addAttribute("errorMessage", "Please correct the errors below.");
             return "register";
         }
 
