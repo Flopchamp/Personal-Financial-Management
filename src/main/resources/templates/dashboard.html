@@ -143,8 +143,8 @@
                                     </small>
                                 </div>
                                 <div class="text-end">
-                                    <span th:class="${transaction.type == T(com.finance.manager.entity.Transaction.TransactionType).INCOME} ? 'text-success' : 'text-danger'"
-                                          th:text="${transaction.type == T(com.finance.manager.entity.Transaction.TransactionType).INCOME ? '+' : '-'} + '$' + ${#numbers.formatDecimal(transaction.amount, 1, 2)}">
+                                    <span th:class="${transaction.type.name() == 'INCOME'} ? 'text-success' : 'text-danger'"
+                                          th:text="${transaction.type.name() == 'INCOME' ? '+' : '-'} + '$' + ${#numbers.formatDecimal(transaction.amount, 1, 2)}">
                                         $0.00
                                     </span>
                                 </div>
