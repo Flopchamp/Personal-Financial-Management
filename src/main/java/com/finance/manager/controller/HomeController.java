@@ -17,7 +17,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class HomeController {
@@ -90,6 +94,9 @@ public class HomeController {
         long expenseCategories = categoryService.countByUserAndType(user, com.finance.manager.entity.Category.CategoryType.EXPENSE);
         boolean needsDefaultCategories = (incomeCategories == 0 || expenseCategories == 0);
         
+        // Generate chart data for the last 6 months
+        Map<String, Object> chartData = generateChartData(user, 6);
+        
         model.addAttribute("title", "Dashboard");
         model.addAttribute("user", user);
         model.addAttribute("monthlyIncome", monthlyIncome);
@@ -107,8 +114,42 @@ public class HomeController {
         model.addAttribute("monthlyTransactionCount", monthlyTransactionCount);
         model.addAttribute("needsDefaultCategories", needsDefaultCategories);
         model.addAttribute("currentMonth", LocalDate.now().getMonth().toString());
+        model.addAttribute("chartData", chartData);
         
         return "dashboard";
+    }
+    
+    private Map<String, Object> generateChartData(User user, int months) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        List<String> labels = new ArrayList<>();
+        List<BigDecimal> incomeData = new ArrayList<>();
+        List<BigDecimal> expenseData = new ArrayList<>();
+        List<BigDecimal> netData = new ArrayList<>();
+        
+        LocalDate currentDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy");
+        
+        // Generate data for the last 'months' months
+        for (int i = months - 1; i >= 0; i--) {
+            LocalDate monthStart = currentDate.minusMonths(i).withDayOfMonth(1);
+            LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+            
+            BigDecimal monthlyIncome = transactionService.getTotalIncomeByUserAndDateRange(user, monthStart, monthEnd);
+            BigDecimal monthlyExpense = transactionService.getTotalExpenseByUserAndDateRange(user, monthStart, monthEnd);
+            BigDecimal monthlyNet = monthlyIncome.subtract(monthlyExpense);
+            
+            labels.add(monthStart.format(formatter));
+            incomeData.add(monthlyIncome);
+            expenseData.add(monthlyExpense);
+            netData.add(monthlyNet);
+        }
+        
+        data.put("labels", labels);
+        data.put("incomeData", incomeData);
+        data.put("expenseData", expenseData);
+        data.put("netData", netData);
+        
+        return data;
     }
     
     private User getCurrentUser(Authentication authentication) {
